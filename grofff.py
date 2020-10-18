@@ -24,11 +24,56 @@ def get_product(id):
         product["name"] = "Unknown"
     return product
 
+def by_barcode(barcode):
+    product = requests.get(url.format("/stock/products/by-barcode/{}".format(barcode))).json()
+    if "product" in product:
+        return get_product(product["product"]["id"])
+    return {"name": "Unknown"}
+
 def check_product(product):
     if len(product["barcode"]) != 1 or not product["barcode"][0]:
         print("{} has no or too many barcodes linked".format(product["name"]))
     else:
         fix_product(product)
+
+# products with missing information of OpenFoodFacts
+def missing_off():
+    pass
+
+def check_barcodes():
+    too_short = []
+    non_digit = []
+    missing = []
+    products = requests.get(url.format("/objects/products")).json()
+    for product in products:
+            if "barcode" in product:
+                product["barcode"] = product["barcode"].split(",")
+            else:
+                product["barcode"] = []
+            if len(product["barcode"]) == 0:
+                missing.append(product["id"])
+            elif len(product["barcode"]) == 1 and not product["barcode"][0]:
+                missing.append(product["id"])
+            else:
+                for code in product["barcode"]:
+                    if not code.isdigit():
+                        non_digit.append(code)
+                    # UPC: 12
+                    # EAN: 8, 13
+                    elif len(code) != 8 and len(code) != 12 and len(code) != 13:
+                        too_short.append(code)
+    print("These Products have invalid characters in their barcode:")
+    for ndi in non_digit:
+        product = by_barcode(ndi)
+        print(" #{:>03}: {:15} ({})".format(product["id"], ndi, product["name"]))
+    print("\nThese Products have no barcodes:")
+    for miss in missing:
+        product = get_product(miss)
+        print(" #{:>03}: {}".format(miss, product["name"]))
+    print("\nThese Products have barcodes with incorrect length (8, 12 and 13 for EAN and UPC):")
+    for tosh in too_short:
+        product = by_barcode(tosh)
+        print(" #{:>03}: {:15} [{:>02}] ({})".format(product["id"], tosh, len(tosh), product["name"]))
 
 def fix_product(product):
     print("Product #{}:".format(product["id"]))
@@ -146,6 +191,7 @@ def main():
     parser.add_argument("--id", "-i", type=int, help="fix product grocy id")
     parser.add_argument("--all", "-a", default="no", help="fix all products")
     parser.add_argument("--ignored", default="no", help="fix all ignored products")
+    parser.add_argument("--checkbarcodes", "-c", default="no", help="check barcodes of all products")
     global args
     args = parser.parse_args()
     global config
@@ -181,6 +227,9 @@ def main():
             print("Barcode '{}' not found!".format(args.barcode))
     elif args.id:
         check_product(get_product(args.id))
+    
+    elif args.checkbarcodes != "no" and args.checkbarcodes != "n" and args.checkbarcodes != "false" and args.checkbarcodes != "off" and args.checkbarcodes != "0":
+        check_barcodes()
     elif args.all != "no" and args.all != "n" and args.all != "false" and args.all != "off" and args.all != "0":
         # find all products with barcodes
         products = requests.get(url.format("/objects/products")).json()
