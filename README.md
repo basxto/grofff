@@ -1,3 +1,5 @@
+# Grocy OpenFoodFacts Fixer
+
 Requirements:
 ```
 pip install openfoodfacts
@@ -56,5 +58,16 @@ Updating products is not yet implemented:
  Name: Mio Mio Mate Ginger
  Purchase quantity: 11
 ```
+```
+$ ./grofff.py --help
+usage: grofff.py [-h] [--barcode BARCODE] [--id ID] [--all ALL]
+optional arguments:
+  -h, --help            show this help message and exit
+  --barcode BARCODE, -b BARCODE
+                        fix product with barcode (on stock only)
+  --id ID, -i ID        fix product grocy id
+  --all ALL, -a ALL     fix all products
+```
+
 
 Quantity mapping, URL, port and API key can be configured in `grofff.ini`.

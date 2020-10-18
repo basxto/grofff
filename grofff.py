@@ -170,7 +170,7 @@ def main():
             print("Barcode '{}' not found!".format(args.barcode))
     elif args.id:
         check_product(get_product(args.id))
-    elif args.all != "no":
+    elif args.all != "no" and args.all != "n" and args.all != "false" and args.all != "off" and args.all != "0":
         # find all products with barcodes
         products = requests.get(url.format("/objects/products")).json()
         for product in products:
