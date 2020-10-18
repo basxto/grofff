@@ -1,6 +1,7 @@
 Requirements:
 ```
 pip install openfoodfacts
+pip install requests
 ```
 Usage:
 

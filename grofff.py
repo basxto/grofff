@@ -101,6 +101,9 @@ def fix_product(product):
             print("  Proposed value: {} ({})".format(packaging, get_quantity(packaging)))
         if quantity_unit != -1 and quantity != 0:
             print(" One stock quantity is equal to {} of quantity {} ({}) (not supported by grocy API)".format(quantity, quantity_unit, get_quantity(quantity_unit)))
+        # there is nothing we can update
+        if not name and kcal == 0 and packaging == -1:
+            return
         # get user selection
         choice = input('y/N/abcq: ').lower()
         if choice != "y":
@@ -115,13 +118,19 @@ def fix_product(product):
         if not name and kcal == 0 and packaging == -1:
             print("Nothing to update!")
         else:
-            print("Updating products is not yet implemented:")
+            print("Updating products:")
+            data = {};
             if name:
                 print(" Name: {}".format(name))
+                data["name"] = name
             if kcal != 0:
                 print(" Total calories: {}".format(kcal))
+                data["calories"] = kcal
             if packaging != -1:
+                data["qu_id_purchase"] = packaging
                 print(" Purchase quantity: {}".format(packaging))
+            response = requests.put( url.format("objects/products/{}".format(product["id"])), data=data)
+            #print(response)
 
 def main():
     parser = argparse.ArgumentParser()
