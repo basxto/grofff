@@ -44,6 +44,9 @@ def fix_product(product):
         nameb = ""
         if "product_name" in off_product:
             name = off_product["product_name"]
+        # use custom language de,fr,en
+        if "lang" in config["grocy"] and "product_name_{}".format(config["grocy"]["lang"]) in off_product:
+            name = off_product["product_name_{}".format(config["grocy"]["lang"])]
         if "brands" in off_product:
             nameb = "{} {}".format(off_product["brands"], name)
         else:
