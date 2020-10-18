@@ -90,8 +90,8 @@ def fix_product(product):
         if "product_name" in off_product:
             name = off_product["product_name"]
         # use custom language de,fr,en
-        if "lang" in config["grocy"] and "product_name_{}".format(config["grocy"]["lang"]) in off_product:
-            name = off_product["product_name_{}".format(config["grocy"]["lang"])]
+        if "lang" in config["openfoodfacts"] and "product_name_{}".format(config["openfoodfacts"]["lang"]) in off_product:
+            name = off_product["product_name_{}".format(config["openfoodfacts"]["lang"])]
         if "brands" in off_product:
             nameb = "{} {}".format(off_product["brands"], name)
         else:
@@ -205,6 +205,10 @@ def main():
     # initialize .ini
     if not "grocy" in config:
         config["grocy"] = {"url": "http://localhost", "key": "N0N3", "port": "443"}
+        with open("grofff.ini", "w") as configfile:
+            config.write(configfile)
+    if not "openfoodfacts" in config:
+        config["openfoodfacts"] = {"user": "", "password": ""}
         with open("grofff.ini", "w") as configfile:
             config.write(configfile)
     if not "quantity" in config:
