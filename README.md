@@ -67,6 +67,7 @@ optional arguments:
                         fix product with barcode (on stock only)
   --id ID, -i ID        fix product grocy id
   --all ALL, -a ALL     fix all products
+  --ignored IGNORED     fix all ignored products
 ```
 
 

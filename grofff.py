@@ -105,7 +105,12 @@ def fix_product(product):
         if not name and kcal == 0 and packaging == -1:
             return
         # get user selection
-        choice = input('y/N/abcq: ').lower()
+        choice = input('y/N/i/abcq: ').lower()
+        if choice == "i":
+            config["ignore"][product["id"]] = "yes"
+            with open('grofff.ini', 'w') as configfile:
+                config.write(configfile)
+            print("Added to ignore list!")
         if choice != "y":
             if "a" not in choice:
                 name = ""
@@ -137,6 +142,7 @@ def main():
     parser.add_argument("--barcode", "-b", help="fix product with barcode (on stock only)")
     parser.add_argument("--id", "-i", type=int, help="fix product grocy id")
     parser.add_argument("--all", "-a", default="no", help="fix all products")
+    parser.add_argument("--ignored", default="no", help="fix all ignored products")
     global args
     args = parser.parse_args()
     global config
@@ -149,6 +155,8 @@ def main():
             config.write(configfile)
     if not "quantity" in config:
         config["quantity"] = {}
+    if not "ignore" in config:
+        config["ignore"] = {}
     # build url
     global url
     url = "{}/api/".format(config["grocy"]["url"])
@@ -178,7 +186,17 @@ def main():
                 product["barcode"] = product["barcode"].split(",")
             else:
                 product["barcode"] = []
-            if len(product["barcode"]) == 1 and product["barcode"][0]:
+            if len(product["barcode"]) == 1 and product["barcode"][0] and not product["id"] in config["ignore"]:
+                fix_product(product);
+    elif args.ignored != "no" and args.ignored != "n" and args.ignored != "false" and args.ignored != "off" and args.ignored != "0":
+        # find all products with barcodes
+        products = requests.get(url.format("/objects/products")).json()
+        for product in products:
+            if "barcode" in product:
+                product["barcode"] = product["barcode"].split(",")
+            else:
+                product["barcode"] = []
+            if len(product["barcode"]) == 1 and product["barcode"][0] and product["id"] in config["ignore"]:
                 fix_product(product);
     else:
         parser.print_help()
