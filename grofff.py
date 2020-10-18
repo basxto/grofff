@@ -7,9 +7,11 @@ import re
 import configparser
 
 def get_quantity(id):
+    if id == -1:
+        return ""
     quantity = requests.get(url.format("objects/quantity_units/{}".format(id))).json()
     if not "name" in quantity:
-        return "Unknown"
+        return ""
     return quantity["name"]
 
 def get_product(id):
@@ -42,8 +44,10 @@ def fix_product(product):
         nameb = ""
         if "product_name" in off_product:
             name = off_product["product_name"]
-        if "brands" in off_product and name:
+        if "brands" in off_product:
             nameb = "{} {}".format(off_product["brands"], name)
+        else:
+            print(" Brand missing on OpenFoodFacts")
         # name is already correct
         if name == product["name"] or nameb == product["name"]:
             name = ""
@@ -55,10 +59,15 @@ def fix_product(product):
             unit = re.findall("[0-9]*\s?([a-zA-Z]*).*", off_product["quantity"])[0]
             if unit in config["quantity"]:
                 quantity_unit = config["quantity"].getint(unit)
+        else:
+            print(" Quantities missing on OpenFoodFacts")
         kcal = 0
         # calculate whole energy based on energy per 100g/100ml
         if "nutriments" in off_product and "energy-kcal_100g" in off_product["nutriments"] and quantity != 0:
             kcal = round(off_product["nutriments"]["energy-kcal_100g"]*(quantity/100))
+            print(" Calories based on {} kcal per 100{}".format(off_product["nutriments"]["energy-kcal_100g"], get_quantity(quantity_unit)))
+        else:
+            print(" Calories missing on OpenFoodFacts")
         if str(kcal) == product["calories"]:
             kcal = 0
         packaging = -1
