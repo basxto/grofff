@@ -4,9 +4,7 @@ from pygrocy import Grocy
 import openfoodfacts
 import argparse
 import re
-
-# packaging mappings must be aa lower case
-quantities = { 'ml': 9, 'g': 5, 'glas': 11, 'sachet': 3, 'plastique': 3, 'kunststoff': 3}
+import configparser
 
 def check_product(product):
     if len(product.barcodes) != 1 or not product.barcodes[0]:
@@ -31,8 +29,8 @@ def fix_product(product):
         if "product_quantity" in off_product and "quantity" in off_product:
             quantity = int(off_product["product_quantity"])
             unit = re.findall("[0-9]*\s?([a-zA-Z]*).*", off_product["quantity"])[0]
-            if unit in quantities:
-                quantity_unit = quantities[unit]
+            if unit in config["quantity"]:
+                quantity_unit = config["quantity"].getint(unit)
         kcal = 0
         # calculate whole energy based on energy per 100g/100ml
         if "nutriments" in off_product and "energy-kcal_100g" in off_product["nutriments"] and quantity != 0:
@@ -41,10 +39,11 @@ def fix_product(product):
         # find mappable packages
         if "packaging" in off_product:
             for pckg in off_product["packaging"].split(','):
+                # packaging mappings must be in lower case
                 pckg = pckg.lower()
                 #print(pckg)
-                if pckg in quantities:
-                    packaging = quantities[pckg]
+                if pckg in config["quantity"]:
+                    packaging = config["quantity"].getint(pckg)
                     break
         print("Proposed values:")
         if name:
@@ -65,8 +64,18 @@ def main():
     #parser.add_argument("--all", "-a", default="no", help="fix all products")
     global args
     args = parser.parse_args()
+    global config
+    config = configparser.ConfigParser()
+    config.read("grofff.ini")
+    # initialize .ini
+    if not "grocy" in config:
+        config["grocy"] = {"url": "http://localhost", "key": "N0N3", "port": "443"}
+        with open('grofff.ini', 'w') as configfile:
+            config.write(configfile)
+    if not "quantity" in config:
+        config["quantity"] = {}
     global grocy
-    grocy = Grocy("URL", "APIKEY", port=443)
+    grocy = Grocy(config["grocy"]["url"], config["grocy"]["key"], port=config["grocy"].getint("port"))
     #if args.barcode:
     #    print('Not yet possible!')
     #el

@@ -15,5 +15,5 @@ Proposed values:
  One package unit is equal to 260 of unit 5
 ```
 
-Quantity mapping, URL and API key are currenlty hard coded.
+Quantity mapping, URL, port and API key can be configured in `grofff.ini`.
 Interaction with grocy is minimal at this point since there being no usable python bindings for the grocy API.
