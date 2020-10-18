@@ -39,13 +39,15 @@ def fix_product(product):
     off_product = off_product["product"]
     if off_product:
         name = ""
+        nameb = ""
         if "product_name" in off_product:
             name = off_product["product_name"]
-        #if "brands" in off_product and name:
-        #    name = "{} {}".format(off_product["brands"], name)
+        if "brands" in off_product and name:
+            nameb = "{} {}".format(off_product["brands"], name)
         # name is already correct
-        if name == product["name"]:
+        if name == product["name"] or nameb == product["name"]:
             name = ""
+            nameb = ""
         quantity = 0
         quantity_unit = -1
         if "product_quantity" in off_product and "quantity" in off_product:
@@ -73,10 +75,11 @@ def fix_product(product):
                 print(" No quantities associated with {}".format(off_product["packaging"]))
         if str(packaging) == product["qu_id_purchase"]:
             packaging = -1
+        print(" Name:")
+        print("  Current value: {}".format(product["name"]))
         if name:
-            print(" Na[m]e:")
-            print("  Current value: {}".format(product["name"]))
-            print("  Proposed value: {}".format(name))
+            print("  Proposed value [a]: {}".format(name))
+            print("  Proposed value [b]: {}".format(nameb))
         if kcal != 0:
             #print(" Energy for whole product: {} kcal".format(kcal))
             print(" Total [c]alories:")
