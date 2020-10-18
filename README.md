@@ -68,6 +68,9 @@ optional arguments:
   --id ID, -i ID        fix product grocy id
   --all ALL, -a ALL     fix all products
   --ignored IGNORED     fix all ignored products
+  --checkbarcodes CHECKBARCODES, -c CHECKBARCODES
+                        check barcodes of all products
+  --batch BATCH         always answer selections with this string
 ```
 
 

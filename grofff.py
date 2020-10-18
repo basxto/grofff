@@ -153,10 +153,14 @@ def fix_product(product):
         if not name and kcal == 0 and packaging == -1:
             return
         # get user selection
-        choice = input('y/N/i/abcq: ').lower()
+        if args.batch:
+            choice = args.batch.lower()
+            print("y/N/i/abcq: {} (batch mode)".format(args.batch))
+        else:
+            choice = input("y/N/i/abcq: ").lower()
         if choice == "i":
             config["ignore"][product["id"]] = "yes"
-            with open('grofff.ini', 'w') as configfile:
+            with open("grofff.ini", "w") as configfile:
                 config.write(configfile)
             print("Added to ignore list!")
         if choice != "y":
@@ -192,6 +196,7 @@ def main():
     parser.add_argument("--all", "-a", default="no", help="fix all products")
     parser.add_argument("--ignored", default="no", help="fix all ignored products")
     parser.add_argument("--checkbarcodes", "-c", default="no", help="check barcodes of all products")
+    parser.add_argument("--batch", default="", help="always answer selections with this string")
     global args
     args = parser.parse_args()
     global config
@@ -200,7 +205,7 @@ def main():
     # initialize .ini
     if not "grocy" in config:
         config["grocy"] = {"url": "http://localhost", "key": "N0N3", "port": "443"}
-        with open('grofff.ini', 'w') as configfile:
+        with open("grofff.ini", "w") as configfile:
             config.write(configfile)
     if not "quantity" in config:
         config["quantity"] = {}
