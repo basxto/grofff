@@ -1,28 +1,50 @@
 #!/usr/bin/env python3
 
-from pygrocy import Grocy
+import requests
 import openfoodfacts
 import argparse
 import re
 import configparser
 
+def get_quantity(id):
+    quantity = requests.get(url.format("objects/quantity_units/{}".format(id))).json()
+    if not "name" in quantity:
+        return "Unknown"
+    return quantity["name"]
+
+def get_product(id):
+    product = requests.get(url.format("objects/products/{}".format(id))).json()
+    if "barcode" in product:
+        product["barcode"] = product["barcode"].split(",")
+    else:
+        product["barcode"] = []
+    if not "name" in product:
+        product["name"] = "Unknown"
+    return product
+
 def check_product(product):
-    if len(product.barcodes) != 1 or not product.barcodes[0]:
-        print("{} has no or too many barcodes linked".format(product.name))
+    if len(product["barcode"]) != 1 or not product["barcode"][0]:
+        print("{} has no or too many barcodes linked".format(product["name"]))
     else:
         fix_product(product)
 
 def fix_product(product):
-    barcode = product.barcodes[0]
-    off_product = openfoodfacts.products.get_product(barcode)["product"]
+    print("Product #{}:".format(product["id"]))
+    barcode = product["barcode"][0]
+    off_product = openfoodfacts.products.get_product(barcode)
+    if not "product" in off_product:
+        print(" Name: {}".format(product["name"]))
+        print(" Barcode '{}' not found on OpenFoodFacts".format(barcode))
+        return
+    off_product = off_product["product"]
     if off_product:
         name = ""
         if "product_name" in off_product:
             name = off_product["product_name"]
-        if "brands" in off_product and name:
-            name = "{} {}".format(off_product["brands"], name)
+        #if "brands" in off_product and name:
+        #    name = "{} {}".format(off_product["brands"], name)
         # name is already correct
-        if name == product.name:
+        if name == product["name"]:
             name = ""
         quantity = 0
         quantity_unit = -1
@@ -35,6 +57,8 @@ def fix_product(product):
         # calculate whole energy based on energy per 100g/100ml
         if "nutriments" in off_product and "energy-kcal_100g" in off_product["nutriments"] and quantity != 0:
             kcal = round(off_product["nutriments"]["energy-kcal_100g"]*(quantity/100))
+        if str(kcal) == product["calories"]:
+            kcal = 0
         packaging = -1
         # find mappable packages
         if "packaging" in off_product:
@@ -45,23 +69,32 @@ def fix_product(product):
                 if pckg in config["quantity"]:
                     packaging = config["quantity"].getint(pckg)
                     break
-        print("Proposed values:")
+            if packaging == -1:
+                print(" No quantities associated with {}".format(off_product["packaging"]))
+        if str(packaging) == product["qu_id_purchase"]:
+            packaging = -1
         if name:
-            print(" Name: {}".format(name))
+            print(" Na[m]e:")
+            print("  Current value: {}".format(product["name"]))
+            print("  Proposed value: {}".format(name))
         if kcal != 0:
-            print(" Energy for whole product: {} kcal".format(kcal))
+            #print(" Energy for whole product: {} kcal".format(kcal))
+            print(" Total [c]alories:")
+            print("  Current value: {} kcal".format(product["calories"]))
+            print("  Proposed value: {} kcal".format(kcal))
         if packaging != -1:
-            print(" Packaging unit: {}".format(packaging))
+            print(" Purchase [q]uantity")
+            #print(" Packaging unit: {}".format(packaging))
+            print("  Current value: {} ({})".format(product["qu_id_purchase"], get_quantity(product["qu_id_purchase"])))
+            print("  Proposed value: {} ({})".format(packaging, get_quantity(packaging)))
         if quantity_unit != -1 and quantity != 0:
-            print(" One package unit is equal to {} of unit {}".format(quantity, quantity_unit))
-
-
+            print(" One stock quantity is equal to {} of quantity {} ({}) (not supported by grocy API)".format(quantity, quantity_unit, get_quantity(quantity_unit)))
 
 def main():
     parser = argparse.ArgumentParser()
-    #parser.add_argument("--barcode", "-b", help="fix product with barcode")
+    parser.add_argument("--barcode", "-b", help="fix product with barcode (on stock only)")
     parser.add_argument("--id", "-i", type=int, help="fix product grocy id")
-    #parser.add_argument("--all", "-a", default="no", help="fix all products")
+    parser.add_argument("--all", "-a", default="no", help="fix all products")
     global args
     args = parser.parse_args()
     global config
@@ -74,15 +107,37 @@ def main():
             config.write(configfile)
     if not "quantity" in config:
         config["quantity"] = {}
-    global grocy
-    grocy = Grocy(config["grocy"]["url"], config["grocy"]["key"], port=config["grocy"].getint("port"))
-    #if args.barcode:
-    #    print('Not yet possible!')
-    #el
-    if args.id:
-        check_product(grocy.product(args.id))
-    #elif args.all != "no":
-    #    print('Not yet possible!')
+    # build url
+    global url
+    url = "{}/api/".format(config["grocy"]["url"])
+    if "port" in config["grocy"]:
+        url_array = url.split('/')
+        if len(url_array) < 3:
+            print("URL misses ://")
+            exit()
+        # 2 because of protocoll
+        url_array[2] += ":" + config["grocy"]["port"]
+        url = "/".join(url_array)
+    url += "{}?GROCY-API-KEY=" + config["grocy"]["key"]
+    #print(url)
+    if args.barcode:
+        product = requests.get(url.format("/stock/products/by-barcode/{}".format(args.barcode))).json()
+        if "product" in product:
+            check_product(get_product(product["product"]["id"]))
+        else:
+            print("Barcode '{}' not found!".format(args.barcode))
+    elif args.id:
+        check_product(get_product(args.id))
+    elif args.all != "no":
+        # find all products with barcodes
+        products = requests.get(url.format("/objects/products")).json()
+        for product in products:
+            if "barcode" in product:
+                product["barcode"] = product["barcode"].split(",")
+            else:
+                product["barcode"] = []
+            if len(product["barcode"]) == 1 and product["barcode"][0]:
+                fix_product(product);
     else:
         parser.print_help()
 

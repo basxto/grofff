@@ -1,6 +1,5 @@
 Requirements:
 ```
-pip install pygrocy
 pip install openfoodfacts
 ```
 Usage:
@@ -16,4 +15,3 @@ Proposed values:
 ```
 
 Quantity mapping, URL, port and API key can be configured in `grofff.ini`.
-Interaction with grocy is minimal at this point since there being no usable python bindings for the grocy API.
