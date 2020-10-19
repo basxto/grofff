@@ -114,12 +114,10 @@ def fix_product(product):
         if name == product["name"] or nameb == product["name"]:
             name = ""
             nameb = ""
-        #'serving_size'
         serving = 100
         serving_unit = config["quantity"].getint('g')
-        # detmine amount served
+        # determine amount served
         if "serving_size" in off_product:
-            #serv_re = re.findall("([0-9.,]*)\s?([a-zA-Z]*).*", off_product["quantity"])[0]
             unit = extract_unit(off_product["serving_size"])
             serving = unit[0]
             if unit[1] in config["quantity"]:
@@ -144,7 +142,7 @@ def fix_product(product):
                     else:
                         print("  Converted {} kg to {} g".format(old_quantity, quantity))
                 else:
-                    print("  No conversion between {} and {} found!".format(quantity_unit, serving_unit))
+                    print("  No conversion between {} and {} found!".format(get_quantity(quantity_unit), get_quantity(serving_unit)))
         else:
             print(" Quantities missing on OpenFoodFacts")
         kcal = 0
