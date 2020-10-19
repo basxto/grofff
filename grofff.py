@@ -40,6 +40,20 @@ def check_product(product):
 def missing_off():
     pass
 
+# detects "500 ml" "0,5L" "240 g e 400 g" etc
+def extract_unit(str):
+    amount = 0
+    unit_re = re.findall("([0-9.,]*)\s?([a-zA-Z]*).*", str)[0]
+    if "." in unit_re[0] or "," in unit_re[0]:
+        amount = float(unit_re[0].replace(",", "."))
+    else:
+        amount = int(unit_re[0])
+    unit = unit_re[1]
+    # fix wrong units
+    if unit == "L":
+        unit = "l"
+    return (amount, unit)
+
 def check_barcodes():
     too_short = []
     non_digit = []
@@ -100,20 +114,44 @@ def fix_product(product):
         if name == product["name"] or nameb == product["name"]:
             name = ""
             nameb = ""
+        #'serving_size'
+        serving = 100
+        serving_unit = config["quantity"].getint('g')
+        # detmine amount served
+        if "serving_size" in off_product:
+            #serv_re = re.findall("([0-9.,]*)\s?([a-zA-Z]*).*", off_product["quantity"])[0]
+            unit = extract_unit(off_product["serving_size"])
+            serving = unit[0]
+            if unit[1] in config["quantity"]:
+                serving_unit = config["quantity"].getint(unit[1])
         quantity = 0
         quantity_unit = -1
-        if "product_quantity" in off_product and "quantity" in off_product:
-            quantity = int(off_product["product_quantity"])
-            unit = re.findall("[0-9]*\s?([a-zA-Z]*).*", off_product["quantity"])[0]
-            if unit in config["quantity"]:
-                quantity_unit = config["quantity"].getint(unit)
+        if "quantity" in off_product:
+            unit = extract_unit(off_product["quantity"])
+            quantity = unit[0]
+            if unit[1] in config["quantity"]:
+                quantity_unit = config["quantity"].getint(unit[1])
+            if quantity_unit != serving_unit:
+                print(" OpenFoodFacts uses different units for serving and quantity:")
+                if (get_quantity(quantity_unit) == "l" and get_quantity(serving_unit) == "ml") or (get_quantity(quantity_unit) == "kg" and get_quantity(serving_unit) == "g"):
+                    old_quantity = quantity
+                    quantity *= 1000
+                    quantity_unit = serving_unit
+                    if int(quantity) == quantity:
+                        quantity = int(quantity)
+                    if get_quantity(serving_unit) == "ml":
+                        print("  Converted {} l to {} ml".format(old_quantity, quantity))
+                    else:
+                        print("  Converted {} kg to {} g".format(old_quantity, quantity))
+                else:
+                    print("  No conversion between {} and {} found!".format(quantity_unit, serving_unit))
         else:
             print(" Quantities missing on OpenFoodFacts")
         kcal = 0
         # calculate whole energy based on energy per 100g/100ml
         if "nutriments" in off_product and "energy-kcal_100g" in off_product["nutriments"] and quantity != 0:
-            kcal = round(off_product["nutriments"]["energy-kcal_100g"]*(quantity/100))
-            print(" Calories based on {} kcal per 100{}".format(off_product["nutriments"]["energy-kcal_100g"], get_quantity(quantity_unit)))
+            kcal = round(off_product["nutriments"]["energy-kcal_100g"]*(quantity/serving))
+            print(" Calories based on {} kcal per {} {}".format(off_product["nutriments"]["energy-kcal_100g"], serving, get_quantity(serving_unit)))
         else:
             print(" Calories missing on OpenFoodFacts")
         if str(kcal) == product["calories"]:
