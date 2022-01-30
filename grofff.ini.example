@@ -1,0 +1,25 @@
+[grocy]
+url = https://grocy.doma.in
+key = Y0uRK3y
+port = 443
+lang = de
+
+[quantity]
+ml = 9
+g = 5
+l = 10
+kg = 6
+dose = 4
+flasche = 13
+glas = 11
+kunststoff = 3
+folienpack = 3
+produkt = 3
+
+[ignore]
+3 = yes
+
+[openfoodfacts]
+user = your_username
+password = your_password
+

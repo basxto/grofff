@@ -1,5 +1,7 @@
 # Grocy OpenFoodFacts Fixer
 
+***This is not compatible with grocy 3***
+
 Requirements:
 ```
 pip install openfoodfacts
